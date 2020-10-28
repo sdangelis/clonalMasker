@@ -30,7 +30,8 @@ import seaborn as sns
 from matplotlib.collections import PatchCollection
 from matplotlib.patches import Rectangle
 
-VERSION="0.1.0"
+VERSION="0.1.1"
+
 
 #--------------------------------------------------------------------------------------------------------------------------------------
 def splashHelp():
@@ -337,7 +338,7 @@ def geneExpressionWindows(cells_test,args,genes_chr2bounds):
 	windowSizes = range(100000,1000001,100000)
 
 	#write a header
-	print('chromosome','CNA_start', 'CNA_end', 'breakpoint', " ".join([str(el) for el in windowSizes]))
+	print('chromosome','CNA_start', 'CNA_end', 'breakpoint', 'Side', " ".join([str(el) for el in windowSizes]))
 
 	for cell in cells_test:
 
@@ -352,24 +353,42 @@ def geneExpressionWindows(cells_test,args,genes_chr2bounds):
 			for breakpoint in [lb,ub]:
 
 				windowSizes_expression = []
+				windowSizes_expression_left = []
+				windowSizes_expression_right = []
 
 				for ws in windowSizes:
 
 					windowExpTotal = 0.
+					windowExpTotal_left = 0.
+					windowExpTotal_right = 0.
 
 					for gene in genes_chr2bounds[s.chromosome]:
 
 						if (breakpoint - ws < gene[0] < breakpoint + ws) and (breakpoint - ws < gene[1] < breakpoint + ws):
 							
 							windowExpTotal += gene[2]
+
+						if (breakpoint - ws < gene[0] < breakpoint) and (breakpoint - ws < gene[1] < breakpoint):
+							
+							windowExpTotal_left += gene[2]
+
+						if (breakpoint < gene[0] < breakpoint + ws) and (breakpoint < gene[1] < breakpoint + ws):
+							
+							windowExpTotal_right += gene[2]
 					
 					windowSizes_expression.append(windowExpTotal)
+					windowSizes_expression_left.append(windowExpTotal_left)
+					windowSizes_expression_right.append(windowExpTotal_right)
 
-				print(s.chromosome, s.start, s.end, breakpoint, " ".join([str(el) for el in windowSizes_expression]))
+				print(s.chromosome, s.start, s.end, breakpoint, 'Total', " ".join([str(el) for el in windowSizes_expression]))
+				print(s.chromosome, s.start, s.end, breakpoint, 'Left', " ".join([str(el) for el in windowSizes_expression_left]))
+				print(s.chromosome, s.start, s.end, breakpoint, 'Right', " ".join([str(el) for el in windowSizes_expression_right]))
 
 
 #-------------------------------------------------
 def plotGeneHistogram(cells_test,args,genes_chr2bounds):
+
+	print('Chromosome', 'CopyNumber', 'CNAstart', '', 'CNAend', 'directionalDist(kb)')
 
 	directionalDistances = []
 	absDistances = []
@@ -384,7 +403,37 @@ def plotGeneHistogram(cells_test,args,genes_chr2bounds):
 			ub = int(s.end)	
 
 			minDist = 10000000000
+			minDist_left = 10000000000
+			minDist_right = 10000000000
 			found = False
+			found_left = False
+			found_right = False
+
+			for gene in genes_chr2bounds[s.chromosome]:
+
+				d1 = lb - gene[0]
+				d2 = lb - gene[1]
+				delta = [d1,d2]
+				idx = np.argmin([abs(d1),abs(d2)])
+
+				if abs(delta[idx]) < abs(minDist_left):
+					minDist_left = delta[idx]
+					found_left = True
+
+			for gene in genes_chr2bounds[s.chromosome]:
+
+				d3 = ub - gene[0]
+				d4 = ub - gene[1]
+				delta = [d3,d4]
+				idx = np.argmin([abs(d3),abs(d4)])
+
+				if abs(delta[idx]) < abs(minDist_right):
+					minDist_right = delta[idx]
+					found_right = True
+
+			if found_left and found_right:
+				print(s.chromosome, s.var, s.start, minDist_left, s.end, minDist_right)
+
 			for gene in genes_chr2bounds[s.chromosome]:
 
 				d1 = lb - gene[0]
@@ -402,6 +451,7 @@ def plotGeneHistogram(cells_test,args,genes_chr2bounds):
 			if found:
 				directionalDistances.append(directionalDist)
 				absDistances.append(minDist)
+
 			if not found:
 				print('error')
 
