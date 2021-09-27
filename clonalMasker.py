@@ -23,8 +23,9 @@
 
 import sys
 import matplotlib
+from matplotlib.colors import LightSource
 matplotlib.use('Agg')
-from matplotlib import pyplot as plt
+from matplotlib import pyplot as plt 
 import numpy as np
 import seaborn as sns
 from matplotlib.collections import PatchCollection
@@ -313,9 +314,10 @@ def parseReplicationTiming(filename):
 #-------------------------------------------------
 def replicationWindows(cells_test,args,chrBin2timing):
 
-	#write the header
-	print('chromosome','CNA_start', 'CNA_end', 'breakpoint', 'timing')
-	
+	with open((args.outPrefix + '_replicationWindows_fraction_'+str(clonalThreshold)+'_minOverlap_'+str(args.minOverlap)+'.tsv'), 'w') as f:
+		#write the header
+		print('chromosome','CNA_start', 'CNA_end', 'breakpoint', 'timing', file=f)
+
 	for cell in cells_test:
 
 		for s in cell.SCNAs:
@@ -329,7 +331,7 @@ def replicationWindows(cells_test,args,chrBin2timing):
 
 				if (s.chromosome,breakpointBin) in chrBin2timing:
 
-					print(s.chromosome, s.start, s.end, breakpoint, chrBin2timing[(s.chromosome,breakpointBin)])
+					print(s.chromosome, s.start, s.end, breakpoint, chrBin2timing[(s.chromosome,breakpointBin)], file=f)
 
 
 #-------------------------------------------------
