@@ -1,3 +1,8 @@
+### DO THIS 
+# Change the function calls to reflect the file to avoid accessing global
+#####
+
+
 #--------------------------------------------------------------------------------
 # Copyright (c) 2020 Michael A. Boemo (mb915@cam.ac.uk)
 
@@ -338,135 +343,136 @@ def replicationWindows(cells_test,args,chrBin2timing):
 def geneExpressionWindows(cells_test,args,genes_chr2bounds):
 
 	windowSizes = range(100000,1000001,100000)
+	with open((args.outPrefix + '_gene_expression_window_fraction_'+str(clonalThreshold)+'_minOverlap_'+str(args.minOverlap)+'.tsv'), 'w') as f:
+		#write a header
+		print('chromosome','CNA_start', 'CNA_end', 'breakpoint', 'Side', " ".join([str(el) for el in windowSizes]), file = f)
 
-	#write a header
-	print('chromosome','CNA_start', 'CNA_end', 'breakpoint', 'Side', " ".join([str(el) for el in windowSizes]))
+		for cell in cells_test:
 
-	for cell in cells_test:
+			for s in cell.SCNAs:
 
-		for s in cell.SCNAs:
+				if s.chromosome not in genes_chr2bounds:
+					continue
 
-			if s.chromosome not in genes_chr2bounds:
-				continue
+				lb = int(s.start)
+				ub = int(s.end)	
 
-			lb = int(s.start)
-			ub = int(s.end)	
+				for breakpoint in [lb,ub]:
 
-			for breakpoint in [lb,ub]:
+					windowSizes_expression = []
+					windowSizes_expression_left = []
+					windowSizes_expression_right = []
 
-				windowSizes_expression = []
-				windowSizes_expression_left = []
-				windowSizes_expression_right = []
+					for ws in windowSizes:
 
-				for ws in windowSizes:
+						windowExpTotal = 0.
+						windowExpTotal_left = 0.
+						windowExpTotal_right = 0.
 
-					windowExpTotal = 0.
-					windowExpTotal_left = 0.
-					windowExpTotal_right = 0.
+						for gene in genes_chr2bounds[s.chromosome]:
 
-					for gene in genes_chr2bounds[s.chromosome]:
+							if (breakpoint - ws < gene[0] < breakpoint + ws) and (breakpoint - ws < gene[1] < breakpoint + ws):
+								
+								windowExpTotal += gene[2]
 
-						if (breakpoint - ws < gene[0] < breakpoint + ws) and (breakpoint - ws < gene[1] < breakpoint + ws):
-							
-							windowExpTotal += gene[2]
+							if (breakpoint - ws < gene[0] < breakpoint) and (breakpoint - ws < gene[1] < breakpoint):
+								
+								windowExpTotal_left += gene[2]
 
-						if (breakpoint - ws < gene[0] < breakpoint) and (breakpoint - ws < gene[1] < breakpoint):
-							
-							windowExpTotal_left += gene[2]
+							if (breakpoint < gene[0] < breakpoint + ws) and (breakpoint < gene[1] < breakpoint + ws):
+								
+								windowExpTotal_right += gene[2]
+						
+						windowSizes_expression.append(windowExpTotal)
+						windowSizes_expression_left.append(windowExpTotal_left)
+						windowSizes_expression_right.append(windowExpTotal_right)
 
-						if (breakpoint < gene[0] < breakpoint + ws) and (breakpoint < gene[1] < breakpoint + ws):
-							
-							windowExpTotal_right += gene[2]
-					
-					windowSizes_expression.append(windowExpTotal)
-					windowSizes_expression_left.append(windowExpTotal_left)
-					windowSizes_expression_right.append(windowExpTotal_right)
-
-				print(s.chromosome, s.start, s.end, breakpoint, 'Total', " ".join([str(el) for el in windowSizes_expression]))
-				print(s.chromosome, s.start, s.end, breakpoint, 'Left', " ".join([str(el) for el in windowSizes_expression_left]))
-				print(s.chromosome, s.start, s.end, breakpoint, 'Right', " ".join([str(el) for el in windowSizes_expression_right]))
+					print(s.chromosome, s.start, s.end, breakpoint, 'Total', " ".join([str(el) for el in windowSizes_expression]),file = f)
+					print(s.chromosome, s.start, s.end, breakpoint, 'Left', " ".join([str(el) for el in windowSizes_expression_left]),file = f)
+					print(s.chromosome, s.start, s.end, breakpoint, 'Right', " ".join([str(el) for el in windowSizes_expression_right]),file = f)
 
 
 #-------------------------------------------------
 def plotGeneHistogram(cells_test,args,genes_chr2bounds):
 
-	print('Chromosome', 'CopyNumber', 'CNAstart', '', 'CNAend', 'directionalDist(kb)')
+	with open((args.outPrefix + '_large_gene_distance_fraction_'+str(clonalThreshold)+'_minOverlap_'+str(args.minOverlap)+'.tsv'), 'w') as f:
+		print('Chromosome', 'CopyNumber', 'CNAstart', '', 'CNAend', 'directionalDist(kb)', file = f)
 
-	directionalDistances = []
-	absDistances = []
-	for cell in cells_test:
+		directionalDistances = []
+		absDistances = []
+		for cell in cells_test:
 
-		for s in cell.SCNAs:
+			for s in cell.SCNAs:
 
-			if s.chromosome not in genes_chr2bounds:
-				continue
+				if s.chromosome not in genes_chr2bounds:
+					continue
 
-			lb = int(s.start) 
-			ub = int(s.end)	
+				lb = int(s.start) 
+				ub = int(s.end)	
 
-			minDist = 10000000000
-			minDist_left = 10000000000
-			minDist_right = 10000000000
-			found = False
-			found_left = False
-			found_right = False
+				minDist = 10000000000
+				minDist_left = 10000000000
+				minDist_right = 10000000000
+				found = False
+				found_left = False
+				found_right = False
 
-			for gene in genes_chr2bounds[s.chromosome]:
+				for gene in genes_chr2bounds[s.chromosome]:
 
-				d1 = lb - gene[0]
-				d2 = lb - gene[1]
-				delta = [d1,d2]
-				idx = np.argmin([abs(d1),abs(d2)])
+					d1 = lb - gene[0]
+					d2 = lb - gene[1]
+					delta = [d1,d2]
+					idx = np.argmin([abs(d1),abs(d2)])
 
-				if abs(delta[idx]) < abs(minDist_left):
-					minDist_left = delta[idx]
-					found_left = True
+					if abs(delta[idx]) < abs(minDist_left):
+						minDist_left = delta[idx]
+						found_left = True
 
-			for gene in genes_chr2bounds[s.chromosome]:
+				for gene in genes_chr2bounds[s.chromosome]:
 
-				d3 = ub - gene[0]
-				d4 = ub - gene[1]
-				delta = [d3,d4]
-				idx = np.argmin([abs(d3),abs(d4)])
+					d3 = ub - gene[0]
+					d4 = ub - gene[1]
+					delta = [d3,d4]
+					idx = np.argmin([abs(d3),abs(d4)])
 
-				if abs(delta[idx]) < abs(minDist_right):
-					minDist_right = delta[idx]
-					found_right = True
+					if abs(delta[idx]) < abs(minDist_right):
+						minDist_right = delta[idx]
+						found_right = True
 
-			if found_left and found_right:
-				print(s.chromosome, s.var, s.start, minDist_left, s.end, minDist_right)
+				if found_left and found_right:
+					print(s.chromosome, s.var, s.start, minDist_left, s.end, minDist_right, file=f)
 
-			for gene in genes_chr2bounds[s.chromosome]:
+				for gene in genes_chr2bounds[s.chromosome]:
 
-				d1 = lb - gene[0]
-				d2 = lb - gene[1]
-				d3 = ub - gene[0]
-				d4 = ub - gene[1]
-				delta = [d1,d2,d3,d4]
-				idx = np.argmin([abs(d1),abs(d2),abs(d3),abs(d4)])
+					d1 = lb - gene[0]
+					d2 = lb - gene[1]
+					d3 = ub - gene[0]
+					d4 = ub - gene[1]
+					delta = [d1,d2,d3,d4]
+					idx = np.argmin([abs(d1),abs(d2),abs(d3),abs(d4)])
 
-				if abs(delta[idx]) < minDist:
-					minDist = abs(delta[idx])
-					directionalDist = delta[idx]
-					found = True
+					if abs(delta[idx]) < minDist:
+						minDist = abs(delta[idx])
+						directionalDist = delta[idx]
+						found = True
 
-			if found:
-				directionalDistances.append(directionalDist)
-				absDistances.append(minDist)
+				if found:
+					directionalDistances.append(directionalDist)
+					absDistances.append(minDist)
 
-			if not found:
-				print('error')
+				if not found:
+					print('error')
 
-	plt.figure()
-	plt.hist(np.array(directionalDistances)/1000,50)
-	plt.xlabel('Distance from Nearest Large Gene (kb)')
-	plt.ylabel('Count')
-	plt.savefig(args.outPrefix + '_distanceFromLargeGenes_fraction_'+str(clonalThreshold)+'_minOverlap_'+str(args.minOverlap)+'.pdf')
-	plt.close()
-	print('Signed mean distance from nearest large gene (bp):',np.mean(directionalDistances))
-	print('Signed median distance from nearest large gene (bp):',np.median(directionalDistances))
-	print('Absolute mean distance from nearest large gene (bp):',np.mean(absDistances))
-	print('Absolute median distance from nearest large gene (bp):',np.median(absDistances))
+		plt.figure()
+		plt.hist(np.array(directionalDistances)/1000,50)
+		plt.xlabel('Distance from Nearest Large Gene (kb)')
+		plt.ylabel('Count')
+		plt.savefig(args.outPrefix + '_distanceFromLargeGenes_fraction_'+str(clonalThreshold)+'_minOverlap_'+str(args.minOverlap)+'.pdf')
+		plt.close()
+		print('Signed mean distance from nearest large gene (bp):',np.mean(directionalDistances))
+		print('Signed median distance from nearest large gene (bp):',np.median(directionalDistances))
+		print('Absolute mean distance from nearest large gene (bp):',np.mean(absDistances))
+		print('Absolute median distance from nearest large gene (bp):',np.median(absDistances))
 
 
 #-------------------------------------------------
