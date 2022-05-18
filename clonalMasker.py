@@ -1,8 +1,3 @@
-### DO THIS 
-# Change the function calls to reflect the file to avoid accessing global
-#####
-
-
 #--------------------------------------------------------------------------------
 # Copyright (c) 2020 Michael A. Boemo (mb915@cam.ac.uk)
 
@@ -36,7 +31,7 @@ import seaborn as sns
 from matplotlib.collections import PatchCollection
 from matplotlib.patches import Rectangle
 
-VERSION="0.1.1"
+VERSION="0.1.1-Custom Simone Version"
 
 
 #--------------------------------------------------------------------------------------------------------------------------------------
@@ -396,7 +391,7 @@ def geneExpressionWindows(cells_test,args,genes_chr2bounds):
 def plotGeneHistogram(cells_test,args,genes_chr2bounds):
 
 	with open((args.outPrefix + '_large_gene_distance_fraction_'+str(clonalThreshold)+'_minOverlap_'+str(args.minOverlap)+'.tsv'), 'w') as f:
-		print('Chromosome', 'CopyNumber', 'CNAstart', '', 'CNAend', 'directionalDist(kb)', file = f)
+		print('Chromosome', 'CNAstart', 'CNAend', 'CopyNumber', 'directionalDist(kb)-left', 'directionalDist(kb)-right', file = f)
 
 		directionalDistances = []
 		absDistances = []
@@ -440,7 +435,7 @@ def plotGeneHistogram(cells_test,args,genes_chr2bounds):
 						found_right = True
 
 				if found_left and found_right:
-					print(s.chromosome, s.var, s.start, minDist_left, s.end, minDist_right, file=f)
+					print(s.chromosome, s.start, s.end, s.var, minDist_left, minDist_right, file=f)
 
 				for gene in genes_chr2bounds[s.chromosome]:
 
